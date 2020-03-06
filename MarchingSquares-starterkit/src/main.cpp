@@ -1,3 +1,7 @@
+//==============================================================
+// Filename :main.cpp
+// Authors :Berend Visser
+//==============================================================
 // Program that draws contour lines of scalar potential field.
 // Pressing 'm' or 's' switches between the marching ('m') and scanning ('s') algorithms.
 // Pressing 'm' or 's' a second time switches to the multithreaded or improved version of the algorithms.
@@ -69,6 +73,7 @@ void drawContourScanning(UI &ui, Blob &blob, float threshold = 0.015)
     const int sizeY = ui.sizeY;
 
     // YOUR CODE HERE
+
 }
 
 /// Scans full screen area multithreaded. Complexity?
