@@ -73,7 +73,7 @@ void drawContourScanning(UI &ui, Blob &blob, float threshold = 0.015)
     const int sizeY = ui.sizeY;
 
     // YOUR CODE HERE
-
+    
 }
 
 /// Scans full screen area multithreaded. Complexity?
