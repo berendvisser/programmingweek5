@@ -20,6 +20,7 @@
 #include <chrono>
 #include <iostream>
 #include <vector>
+#include <iostream>
 
 constexpr bool capFramerate = false;
 //constexpr float thresholds[] = [0.015];
@@ -73,7 +74,14 @@ void drawContourScanning(UI &ui, Blob &blob, float threshold = 0.015)
     const int sizeY = ui.sizeY;
 
     // YOUR CODE HERE
+    for (int i = -100; i < 100; i++) {
+        for (int j = -100; j < 100; j++) {
+            ui.setDrawColor(j*j%255, i*i%255, 0, 4);
+            ui.drawPixel(i,j);
+        }
+    }
     
+    std::cout << "value of blob\n" ;
 }
 
 /// Scans full screen area multithreaded. Complexity?
