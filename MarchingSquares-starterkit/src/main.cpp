@@ -74,14 +74,37 @@ void drawContourScanning(UI &ui, Blob &blob, float threshold = 0.015)
     const int sizeY = ui.sizeY;
 
     // YOUR CODE HERE
-    for (int i = -100; i < 100; i++) {
-        for (int j = -100; j < 100; j++) {
-            ui.setDrawColor(j*j%255, i*i%255, 0, 4);
-            ui.drawPixel(i,j);
+    Point currentPoint;                                      //point we are operating on
+    Point nextPoint;                                         //previous point
+
+    currentPoint.x = -sizeX;                                //first point to check against x coordinate
+    currentPoint.y = -sizeY;                                    //first point to check against y coordinate
+
+    float curPot;                                            //current potential of point                     
+    float nextPot;                                           //potential of next point
+    float maxPot                                              //max potential
+
+    for (int y = -sizeX+1; y < sizeX; y++) {                 //loop through rows (y coordinates)
+        for (int x = -sizeY; x < sizeY; x++) {               //loop through colums (x coordinates)
+            nextPoint.x = x;                        
+            nextPoint.y = y;
+
+            curPot = blob.potential(currentPoint);
+            nextPot = blob.potential(nextPoint);
+            
+            if (curPot > nextPot && curPot > threshold) {           //check if current point is bigger than previous and bigger than threshold
+                ui.drawPixel(currentPoint.x, currentPoint.y);       //draw blob
+            }
+            currentPoint = nextPoint;
+                
+            
         }
     }
+
     
-    std::cout << "value of blob\n" ;
+
+    
+  
 }
 
 /// Scans full screen area multithreaded. Complexity?
