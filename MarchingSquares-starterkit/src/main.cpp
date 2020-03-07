@@ -21,6 +21,7 @@
 #include <iostream>
 #include <vector>
 #include <iostream>
+#include <cmath>
 
 constexpr bool capFramerate = false;
 //constexpr float thresholds[] = [0.015];
@@ -74,33 +75,37 @@ void drawContourScanning(UI &ui, Blob &blob, float threshold = 0.015)
     const int sizeY = ui.sizeY;
 
     // YOUR CODE HERE
-    Point currentPoint;                                      //point we are operating on
-    Point nextPoint;                                         //previous point
+    Point curPoint;                                         //previous point
 
-    currentPoint.x = -sizeX;                                //first point to check against x coordinate
-    currentPoint.y = -sizeY;                                    //first point to check against y coordinate
+    curPoint.x = (float)-sizeX;                                    //first point to check against x coordinate
+    curPoint.y = (float)-sizeY;                                    //first point to check against y coordinate
 
-    float curPot;                                            //current potential of point                     
-    float nextPot;                                           //potential of next point
-    float maxPot                                              //max potential
+    float curPot;                                           //current potential of point                     
+    float prevPot;                                          //potential of previous point
+    
+    prevPot = blob.potential(curPoint);                     //set potential of first point            
+    
 
-    for (int y = -sizeX+1; y < sizeX; y++) {                 //loop through rows (y coordinates)
-        for (int x = -sizeY; x < sizeY; x++) {               //loop through colums (x coordinates)
-            nextPoint.x = x;                        
-            nextPoint.y = y;
+    ui.setDrawColor(255, 255, 255, 0);                      //set color to white
 
-            curPot = blob.potential(currentPoint);
-            nextPot = blob.potential(nextPoint);
+    for (int y = -sizeX+1; y < sizeX; y++) {                //loop through rows (y coordinates)
+        for (int x = -sizeY; x < sizeY; x++) {              //loop through colums (x coordinates)
+            curPoint.x = (float)x;                                 //set x of current point
+            curPoint.y = (float)y;                                 //set y of current point
+                      
+            curPot = blob.potential(curPoint);              //find current potential
             
-            if (curPot > nextPot && curPot > threshold) {           //check if current point is bigger than previous and bigger than threshold
-                ui.drawPixel(currentPoint.x, currentPoint.y);       //draw blob
+            
+            if (curPot != prevPot && curPot > threshold) {           //check if current point is bigger than previous and bigger than threshold
+                
+                ui.drawPixel((int)curPoint.x, (int)curPoint.y);      //draw blob
             }
-            currentPoint = nextPoint;
+            prevPot = curPot;                                        //set net prev potential
                 
             
         }
     }
-
+    
     
 
     
