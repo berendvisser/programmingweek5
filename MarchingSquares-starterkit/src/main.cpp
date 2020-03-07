@@ -21,13 +21,19 @@
 #include <iostream>
 #include <vector>
 #include <iostream>
-#include <cmath>
+#include <vector>
+
+
+
 
 constexpr bool capFramerate = false;
 //constexpr float thresholds[] = [0.015];
 constexpr float thresholds[] = {0.015, 0.02, 0.03};
 
-
+struct Pixel {
+    int x =0;
+    int y =0;
+};
 
 struct Point
 {
@@ -68,6 +74,9 @@ struct Blob
     }
 };
 
+//function prototypes
+Pixel searchThresholdPixel(UI& ui, Blob& blob, float threshold = 0.015);
+
 /// Scans full screen area. Complexity?
 void drawContourScanning(UI &ui, Blob &blob, float threshold = 0.015)
 {
@@ -75,10 +84,11 @@ void drawContourScanning(UI &ui, Blob &blob, float threshold = 0.015)
     const int sizeY = ui.sizeY;
 
     // YOUR CODE HERE
+    std::cout << "running Scanning\n";
     Point curPoint;                                         //previous point
 
-    curPoint.x = (float)-sizeX;                                    //first point to check against x coordinate
-    curPoint.y = (float)-sizeY;                                    //first point to check against y coordinate
+    curPoint.x = (float)-sizeX;                             //first point to check against x coordinate
+    curPoint.y = (float)-sizeY;                             //first point to check against y coordinate
 
     float curPot;                                           //current potential of point                     
     float prevPot;                                          //potential of previous point
@@ -90,32 +100,27 @@ void drawContourScanning(UI &ui, Blob &blob, float threshold = 0.015)
 
     for (int y = -sizeX+1; y < sizeX; y++) {                //loop through rows (y coordinates)
         for (int x = -sizeY; x < sizeY; x++) {              //loop through colums (x coordinates)
-            curPoint.x = (float)x;                                 //set x of current point
-            curPoint.y = (float)y;                                 //set y of current point
+            curPoint.x = (float)x;                          //set x of current point
+            curPoint.y = (float)y;                          //set y of current point
                       
             curPot = blob.potential(curPoint);              //find current potential
             
             
-            if (curPot != prevPot && curPot > threshold) {           //check if current point is bigger than previous and bigger than threshold
-                
+            if (curPot != prevPot && curPot > threshold) {           //check if current point is bigger than previous and bigger than threshold                
                 ui.drawPixel((int)curPoint.x, (int)curPoint.y);      //draw blob
             }
-            prevPot = curPot;                                        //set net prev potential
-                
-            
-        }
-    }
-    
-    
 
-    
-  
+            prevPot = curPot;                                        //set net prev potential                
+        }
+    } 
 }
 
 /// Scans full screen area multithreaded. Complexity?
 void drawContourScanningThreaded(UI &ui, Blob &blob, float threshold = 0.015)
 {
     // YOUR CODE HERE
+
+    
 }
 
 /// Scans screen area until it finds a pixel on the edge.
@@ -125,6 +130,18 @@ void drawContourScanningThreaded(UI &ui, Blob &blob, float threshold = 0.015)
 void drawContourMarching(UI &ui, Blob &blob, float threshold = 0.015)
 {
     // YOUR CODE HERE
+
+
+    std::cout << "running Marching\n";
+    const int sizeX = ui.sizeX;
+    const int sizeY = ui.sizeY;
+    bool breakSearch = false;
+    std::vector<Pixel> worklist;
+
+    Pixel curvePixel = searchThresholdPixel(ui, blob, threshold);
+    std::cout << "Pixel found at x: " << curvePixel.x << " y:" << curvePixel.y<<std::endl;
+
+    
 }
 
 /// Improved marching squares algorithm.
@@ -133,6 +150,8 @@ void drawContourMarchingBetter(UI &ui, Blob &blob, float threshold = 0.015)
 {
     // YOUR CODE HERE
 }
+
+
 
 int main(int /*argc*/, char ** /*argv*/)
 {
@@ -209,4 +228,27 @@ int main(int /*argc*/, char ** /*argv*/)
     }
 
     return 0;
+}
+
+//This functions returns the first pixel on the curve of the vector field it finds, if nothing is found it return the standard 0,0 pixel
+Pixel searchThresholdPixel(UI& ui, Blob& blob, float threshold)
+{ 
+    const int sizeX = ui.sizeX;
+    const int sizeY = ui.sizeY;
+    Pixel tmpPixel;
+
+    for (int y = -sizeX + 1; y < sizeX; y++) //loop through rows (y coordinates)
+    {
+        for (int x = -sizeY; x < sizeY; x++) //loop through colums (x coordinates)
+        {
+            if (blob.potential((float)x, (float)y > threshold)) 
+            {
+                
+                tmpPixel.x = x;
+                tmpPixel.y = y;
+                return tmpPixel;
+            }
+        }
+    }
+    return tmpPixel;
 }
