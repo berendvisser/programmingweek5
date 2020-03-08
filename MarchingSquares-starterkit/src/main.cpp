@@ -107,10 +107,10 @@ void drawContourScanning(UI &ui, Blob &blob, float threshold = 0.015)
     curPoint.x = (float)-sizeX;                             //first point to check against x coordinate
     curPoint.y = (float)-sizeY;                             //first point to check against y coordinate
 
-    float curPot;                                           //current potential of point                     
-    float prevPot;                                          //potential of previous point
+    bool curPotOverThres;                                           //current potential of point                     
+    bool prevPotOverThres;                                          //potential of previous point
     
-    prevPot = blob.potential(curPoint);                     //set potential of first point            
+    prevPotOverThres = blob.potential(curPoint) > threshold;                     //set potential of first point            
     
 
     ui.setDrawColor(255, 255, 255, 0);                      //set color to white
@@ -120,14 +120,14 @@ void drawContourScanning(UI &ui, Blob &blob, float threshold = 0.015)
             curPoint.x = (float)x;                          //set x of current point
             curPoint.y = (float)y;                          //set y of current point
                       
-            curPot = blob.potential(curPoint);              //find current potential
+            curPotOverThres = blob.potential(curPoint)>threshold;              //find current potential
             
             
-            if (curPot != prevPot && curPot > threshold) {           //check if current point is bigger than previous and bigger than threshold                
+            if (curPotOverThres != prevPotOverThres) {           //check if current point is bigger than previous and bigger than threshold                
                 ui.drawPixel((int)curPoint.x, (int)curPoint.y);      //draw blob
             }
 
-            prevPot = curPot;                                        //set net prev potential                
+            prevPotOverThres = curPotOverThres;                                        //set net prev potential                
         }
     } 
 }
@@ -149,13 +149,18 @@ void drawContourMarching(UI &ui, Blob &blob, float threshold = 0.015)
     // YOUR CODE HERE
     const int sizeX = ui.sizeX;
     const int sizeY = ui.sizeY;
+    const int offset = (sizeX * sizeY) / 2;
 
     std::cout << "running Marching\n";
 
     std::vector<Pixel> workList;    //Make worklist a vector
-    std::map<Pixel, bool> visitedList; //make map of pixels
-   // bool* visitedPixels; 
-    //visitedPixels = new bool[sizeX*sizeY];
+
+    bool* visitedPixels; 
+    visitedPixels = new bool[sizeX*sizeY];
+
+    for (int i = 0; i < sizeX * sizeY; i++) {
+        visitedPixels[i] = false;
+    }
     
 
     workList.push_back(searchThresholdPixel(ui, blob, threshold));  //Find pixel on curve and put on worklist
@@ -166,21 +171,22 @@ void drawContourMarching(UI &ui, Blob &blob, float threshold = 0.015)
 
         Pixel currentPixel = workList.back();  //find last pixel worklist and remove it
         workList.pop_back();
+        bool x = visitedPixels[currentPixel.x + sizeX * currentPixel.y + offset];
 
-        if (visitedList.find(currentPixel) != visitedList.end()) {     //Check if pixel is already visited
+        if (visitedPixels[currentPixel.x + sizeX*currentPixel.y+offset]) {     //Check if pixel is already visited
             
             continue; //skip to next iteration of loop
         }
         else {
             
-            visitedList.insert(std::pair<Pixel, bool>(currentPixel, true)); //Add pixel to list;
+            visitedPixels[currentPixel.x + sizeX * currentPixel.y + offset] = true; //Add pixel to list;
         }
         if (checkPixel(workList, currentPixel, blob, threshold)) {
             addNeighbourPixels(currentPixel, workList);
             ui.drawPixel(currentPixel.x, currentPixel.y);
         }
     } 
-    //delete visitedPixels;
+    delete visitedPixels;
 }
 
 /// Improved marching squares algorithm.
@@ -275,6 +281,22 @@ Pixel searchThresholdPixel(UI& ui, Blob& blob, float threshold)
     const int sizeX = ui.sizeX;
     const int sizeY = ui.sizeY;
     Pixel tmpPixel;
+
+    for (int y = -sizeX + 1; y < sizeX; y++) //loop through rows (y coordinates)
+    {
+        for (int x = -sizeY; x < sizeY; x = x + 30) //loop through colums (x coordinates)
+        {
+            if (blob.potential((float)x, (float)y) > threshold)
+            {
+
+                tmpPixel.x = x;
+                tmpPixel.y = y;
+                return tmpPixel;
+            }
+        }
+    }
+
+    
 
     for (int y = -sizeX + 1; y < sizeX; y++) //loop through rows (y coordinates)
     {
