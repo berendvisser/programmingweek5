@@ -27,12 +27,13 @@
 #include <vector>
 #include <iostream>
 #include <algorithm>
-#include <map>
 #include <cmath>
 #include <array>
+#include <thread>
 
 #define NUM_OF_PEAKS 2
 #define SKIP_NUM_ROWS 10
+#define BLOCK_LENGTH 150000
 
 
 
@@ -97,6 +98,8 @@ Pixel searchThresholdPixel(UI& ui, Blob& blob, float threshold = 0.015);
 bool checkPixel(std::vector<Pixel>& tmpWorklist, Pixel tmpPixel, Blob& blob, float threshold);
 void addNeighbourPixels(Pixel tmpPixel, std::vector<Pixel>& tmpWorklist);
 Pixel searchThresholdPixelBetter(UI& ui, Blob& blob, float threshold, bool reverseScan);
+void testThread(int tmpValue);
+void fillBufferWithdata(Blob& blob, bool* pixels, float threshold, int totalThreads, int threadNumber);
 
 /// Scans full screen area. Complexity?
 void drawContourScanning(UI &ui, Blob &blob, float threshold = 0.015)
@@ -129,7 +132,7 @@ void drawContourScanning(UI &ui, Blob &blob, float threshold = 0.015)
             curPotOverThres = blob.potential(curPoint)>threshold;   //find current potential
             
             
-            if (curPotOverThres != prevPotOverThres)    //check if current point is bigger than previous and bigger than threshold    
+            if (curPotOverThres != prevPotOverThres)    //check if one of both points is over threshold    
             {
                 ui.drawPixel((int)curPoint.x, (int)curPoint.y); //draw blob
             }
@@ -139,12 +142,56 @@ void drawContourScanning(UI &ui, Blob &blob, float threshold = 0.015)
     } 
 }
 
+
+
 /// Scans full screen area multithreaded. Complexity?
 void drawContourScanningThreaded(UI &ui, Blob &blob, float threshold = 0.015)
-{
+{   
+    
     // YOUR CODE HERE
+    const int sizeX = ui.sizeX;
+    const int sizeY = ui.sizeY;
+    const int offset = (sizeX * sizeY) / 2;
 
     
+    bool* bufferPixels; //Visted list (pointer to map of pixels on screen)
+    bufferPixels = new bool[sizeX * sizeY]; //allocate memory 
+
+    //set all values of map to zero
+    for (int i = 0; i < sizeX * sizeY; i++) {
+        bufferPixels[i] = false;
+    }
+
+    //std::thread ab(testThread, 10);
+    //fillBufferWithdata(ui, blob, bufferPixels, 0, threshold);
+    std::thread a(fillBufferWithdata,  blob, bufferPixels, threshold, 4, 0);
+    std::thread b(fillBufferWithdata, blob, bufferPixels, threshold,4,1);
+    std::thread c(fillBufferWithdata, blob, bufferPixels,  threshold,4,2);
+    std::thread d(fillBufferWithdata, blob, bufferPixels,  threshold,4,3);
+
+    a.join();
+    b.join();
+    c.join();
+    d.join();
+
+    for (int y = -sizeY / 2+1 ; y < sizeY / 2; y++)  //loop through columns (y axis)
+    {
+        for (int x = -sizeX / 2; x < sizeX / 2; x++)    //loop through colums (x axis)
+        {
+           if (bufferPixels[x + sizeX * y + offset])    //check if current point is bigger than previous and bigger than threshold    
+            {
+               ui.drawPixel(x, y);
+            }
+
+                          
+        }
+    }
+
+    
+
+    delete[] bufferPixels;    //free allocated memory
+    
+            
 }
 
 /// Scans screen area until it finds a pixel on the edge.
@@ -168,8 +215,7 @@ void drawContourMarching(UI &ui, Blob &blob, float threshold = 0.015)
     //set all values of map to zero
     for (int i = 0; i < sizeX * sizeY; i++) {
         visitedPixels[i] = false;
-    }
-    
+    }    
     
     workList.push_back(searchThresholdPixel(ui, blob, threshold));  //Find pixel on curve and put on worklist
     
@@ -341,6 +387,7 @@ Pixel searchThresholdPixel(UI& ui, Blob& blob, float threshold)
         }
     }
 return tmpPixel;
+
 }
 
 
@@ -385,7 +432,7 @@ Pixel searchThresholdPixelBetter(UI& ui, Blob& blob, float threshold, bool rever
 {
     const int sizeX = ui.sizeX;
     const int sizeY = ui.sizeY;
-    const int offset = (sizeX * sizeY) / 2;
+
 
     Pixel tmpPixel;
 
@@ -421,4 +468,55 @@ Pixel searchThresholdPixelBetter(UI& ui, Blob& blob, float threshold, bool rever
 
     }
     return tmpPixel;
+}
+
+void fillBufferWithdata(Blob& blob, bool* pixels, float threshold, int totalThreads, int threadNumber) {
+
+    
+    Point curPoint;  //previous point
+    Pixel curPixel; // current pixel
+
+    const int sizeX = 1000;
+    const int sizeY = 600;
+    const int offset = (sizeX * sizeY) / 2;
+    
+
+    curPoint.x = (float)-sizeX/2; //first point to check against x coordinate
+    curPoint.y = (float)-sizeY/2 + threadNumber * sizeY / totalThreads; //first point to check against y coordinate
+
+    bool curPotOverThres;   //current potential of point                     
+    bool prevPotOverThres;  //potential of previous point
+
+    prevPotOverThres = blob.potential(curPoint) > threshold;    //set potential of first point            
+
+
+
+
+    for (int y = -sizeY / 2 + 1 +threadNumber*sizeY/ totalThreads; y < -sizeY / 2+ (threadNumber+1) * sizeY / totalThreads; y++)  //loop through columns (y axis)
+    {
+        for (int x = -sizeX / 2; x < sizeX / 2; x++)    //loop through colums (x axis)
+        {
+            curPoint.x = (float)x;  //set x of current point
+            curPoint.y = (float)y;   //set y of current point
+
+            curPotOverThres = blob.potential(curPoint) > threshold;   //find current potential
+
+
+            if (curPotOverThres != prevPotOverThres)    //check if current point is bigger than previous and bigger than threshold    
+            {
+                pixels[x + sizeX * y + offset] = true;
+            }
+
+            prevPotOverThres = curPotOverThres; //set net prev potential                
+        }
+    }
+
+    
+
+    
+}
+
+void testThread(int tmpValue)
+{
+    std::cout << "value is: "<<tmpValue << std::endl;
 }
