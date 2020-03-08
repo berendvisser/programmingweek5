@@ -115,8 +115,8 @@ void drawContourScanning(UI &ui, Blob &blob, float threshold = 0.015)
 
     ui.setDrawColor(255, 255, 255, 0);                      //set color to white
 
-    for (int y = -sizeX+1; y < sizeX; y++) {                //loop through rows (y coordinates)
-        for (int x = -sizeY; x < sizeY; x++) {              //loop through colums (x coordinates)
+    for (int y = -sizeY/2+1; y < sizeY/2; y++) {                //loop through columns (y axis)
+        for (int x = -sizeX/2; x < sizeX/2; x++) {              //loop through colums (x axis)
             curPoint.x = (float)x;                          //set x of current point
             curPoint.y = (float)y;                          //set y of current point
                       
@@ -147,51 +147,49 @@ void drawContourScanningThreaded(UI &ui, Blob &blob, float threshold = 0.015)
 void drawContourMarching(UI &ui, Blob &blob, float threshold = 0.015)
 {
     // YOUR CODE HERE
-    const int sizeX = ui.sizeX;
-    const int sizeY = ui.sizeY;
-    const int offset = (sizeX * sizeY) / 2;
+    const int sizeX = ui.sizeX; //size of screen in x direction
+    const int sizeY = ui.sizeY; //size of screen in y direction
+    const int offset = (sizeX * sizeY) / 2; //offset for making center pixel 0,0
 
-    std::cout << "running Marching\n";
+    std::cout << "running Marching\n"; //log
 
     std::vector<Pixel> workList;    //Make worklist a vector
 
-    bool* visitedPixels; 
-    visitedPixels = new bool[sizeX*sizeY];
+    bool* visitedPixels; //Visted list (pointer to map of pixels on screen)
+    visitedPixels = new bool[sizeX*sizeY]; //allocate memory 
 
+    //set all values of map to zero
     for (int i = 0; i < sizeX * sizeY; i++) {
         visitedPixels[i] = false;
     }
     
-
+    
     workList.push_back(searchThresholdPixel(ui, blob, threshold));  //Find pixel on curve and put on worklist
     
 
-    while (!workList.empty()) {
+    while (!workList.empty()) //Check if worklist is empty
+    {          
+        Pixel currentPixel = workList.back();  //find last pixel worklist and remove it
+        workList.pop_back();    //remove pixel from worklist
         
 
-        Pixel currentPixel = workList.back();  //find last pixel worklist and remove it
-        workList.pop_back();
-        bool x = visitedPixels[currentPixel.x + sizeX * currentPixel.y + offset];
-
-        if (visitedPixels[currentPixel.x + sizeX*currentPixel.y+offset]) {     //Check if pixel is already visited
-            
+        if (visitedPixels[currentPixel.x + sizeX*currentPixel.y+offset]) {     //Check if pixel is already visited using offset            
             continue; //skip to next iteration of loop
         }
-        else {
-            
-            visitedPixels[currentPixel.x + sizeX * currentPixel.y + offset] = true; //Add pixel to list;
+        else {            
+            visitedPixels[currentPixel.x + sizeX * currentPixel.y + offset] = true; //Add pixel to visited list;
         }
-        if (checkPixel(workList, currentPixel, blob, threshold)) {
-            addNeighbourPixels(currentPixel, workList);
-            ui.drawPixel(currentPixel.x, currentPixel.y);
+        if (checkPixel(workList, currentPixel, blob, threshold)) { //check if pixel is on curve
+            addNeighbourPixels(currentPixel, workList); //add neighbours of that pixel to worklist
+            ui.drawPixel(currentPixel.x, currentPixel.y);   //drawpixel
         }
     } 
-    delete visitedPixels;
+    delete [] visitedPixels;    //free allocated memory
 }
 
 /// Improved marching squares algorithm.
 /// Should have better complexity than the initial algorithm described in the manual :)
-void drawContourMarchingBetter(UI &ui, Blob &blob, float threshold = 0.015)
+void drawContourMarchingBetter(UI& ui, Blob& blob, float threshold = 0.015)
 {
     // YOUR CODE HERE
 }
@@ -282,13 +280,12 @@ Pixel searchThresholdPixel(UI& ui, Blob& blob, float threshold)
     const int sizeY = ui.sizeY;
     Pixel tmpPixel;
 
-    for (int y = -sizeX + 1; y < sizeX; y++) //loop through rows (y coordinates)
+    for (int y = -sizeY / 2; y < sizeY / 2; y ++) //loop through rows (y coordinates)
     {
-        for (int x = -sizeY; x < sizeY; x = x + 30) //loop through colums (x coordinates)
+        for (int x = -sizeX/2; x < sizeY/2; x++) //loop through rows (x coordinates)
         {
             if (blob.potential((float)x, (float)y) > threshold)
             {
-
                 tmpPixel.x = x;
                 tmpPixel.y = y;
                 return tmpPixel;
@@ -298,19 +295,7 @@ Pixel searchThresholdPixel(UI& ui, Blob& blob, float threshold)
 
     
 
-    for (int y = -sizeX + 1; y < sizeX; y++) //loop through rows (y coordinates)
-    {
-        for (int x = -sizeY; x < sizeY; x++) //loop through colums (x coordinates)
-        {
-            if (blob.potential((float)x, (float)y) > threshold) 
-            {
-                
-                tmpPixel.x = x;
-                tmpPixel.y = y;
-                return tmpPixel;
-            }
-        }
-    }
+
     return tmpPixel;
 }
 
