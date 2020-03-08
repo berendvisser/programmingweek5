@@ -45,13 +45,6 @@ constexpr float thresholds[] = {0.015, 0.02, 0.03};
 struct Pixel {
     int x =0;
     int y =0;
-
-    bool operator== (const Pixel& tmpPixel) const {
-        return (x == tmpPixel.x) && (y == tmpPixel.y);
-    }
-    bool operator< (const Pixel& rhs) const {                   //Overload operator so map can deal with pixels
-        return (x < rhs.x) || (x == rhs.x && y < rhs.y);
-    }
 };
 
 struct Point
@@ -98,7 +91,6 @@ Pixel searchThresholdPixel(UI& ui, Blob& blob, float threshold = 0.015);
 bool checkPixel(std::vector<Pixel>& tmpWorklist, Pixel tmpPixel, Blob& blob, float threshold);
 void addNeighbourPixels(Pixel tmpPixel, std::vector<Pixel>& tmpWorklist);
 Pixel searchThresholdPixelBetter(UI& ui, Blob& blob, float threshold, bool reverseScan);
-void testThread(int tmpValue);
 void fillBufferWithdata(Blob& blob, bool* pixels, float threshold, int totalThreads, int threadNumber);
 
 /// Scans full screen area. Complexity?
@@ -162,17 +154,17 @@ void drawContourScanningThreaded(UI &ui, Blob &blob, float threshold = 0.015)
         bufferPixels[i] = false;
     }
 
-    //std::thread ab(testThread, 10);
-    //fillBufferWithdata(ui, blob, bufferPixels, 0, threshold);
+    //start 3 threads with each a dedicated part of the vector field to scan
     std::thread a(fillBufferWithdata,  blob, bufferPixels, threshold, 4, 0);
     std::thread b(fillBufferWithdata, blob, bufferPixels, threshold,4,1);
     std::thread c(fillBufferWithdata, blob, bufferPixels,  threshold,4,2);
-    std::thread d(fillBufferWithdata, blob, bufferPixels,  threshold,4,3);
 
-    a.join();
+    fillBufferWithdata( blob, bufferPixels, threshold, 4, 3);
+    //sync threads (wait till they are done)
+    a.join(); 
     b.join();
     c.join();
-    d.join();
+
 
     for (int y = -sizeY / 2+1 ; y < sizeY / 2; y++)  //loop through columns (y axis)
     {
@@ -180,7 +172,7 @@ void drawContourScanningThreaded(UI &ui, Blob &blob, float threshold = 0.015)
         {
            if (bufferPixels[x + sizeX * y + offset])    //check if current point is bigger than previous and bigger than threshold    
             {
-               ui.drawPixel(x, y);
+               ui.drawPixel(x, y); // draw pixels
             }
 
                           
@@ -495,7 +487,7 @@ void fillBufferWithdata(Blob& blob, bool* pixels, float threshold, int totalThre
 
 
 
-
+    //The y column is specific for each thread
     for (int y = -sizeY / 2 + 1 +threadNumber*sizeY/ totalThreads; y < -sizeY / 2+ (threadNumber+1) * sizeY / totalThreads; y++)  //loop through columns (y axis)
     {
         for (int x = -sizeX / 2; x < sizeX / 2; x++)    //loop through colums (x axis)
