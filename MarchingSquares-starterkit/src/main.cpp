@@ -20,8 +20,16 @@
 #include <chrono>
 #include <iostream>
 #include <vector>
-#include <iostream>
+
+
+
+//Personal used libs
 #include <vector>
+#include <iostream>
+#include <algorithm>
+#include <map>
+#include <cmath>
+#include <array>
 
 
 
@@ -33,6 +41,13 @@ constexpr float thresholds[] = {0.015, 0.02, 0.03};
 struct Pixel {
     int x =0;
     int y =0;
+
+    bool operator== (const Pixel& tmpPixel) const {
+        return (x == tmpPixel.x) && (y == tmpPixel.y);
+    }
+    bool operator< (const Pixel& rhs) const {                   //Overload operator so map can deal with pixels
+        return (x < rhs.x) || (x == rhs.x && y < rhs.y);
+    }
 };
 
 struct Point
@@ -76,6 +91,8 @@ struct Blob
 
 //function prototypes
 Pixel searchThresholdPixel(UI& ui, Blob& blob, float threshold = 0.015);
+bool checkPixel(std::vector<Pixel>& tmpWorklist, Pixel tmpPixel, Blob& blob, float threshold);
+void addNeighbourPixels(Pixel tmpPixel, std::vector<Pixel>& tmpWorklist);
 
 /// Scans full screen area. Complexity?
 void drawContourScanning(UI &ui, Blob &blob, float threshold = 0.015)
@@ -130,18 +147,40 @@ void drawContourScanningThreaded(UI &ui, Blob &blob, float threshold = 0.015)
 void drawContourMarching(UI &ui, Blob &blob, float threshold = 0.015)
 {
     // YOUR CODE HERE
-
-
-    std::cout << "running Marching\n";
     const int sizeX = ui.sizeX;
     const int sizeY = ui.sizeY;
-    bool breakSearch = false;
-    std::vector<Pixel> worklist;
 
-    Pixel curvePixel = searchThresholdPixel(ui, blob, threshold);
-    std::cout << "Pixel found at x: " << curvePixel.x << " y:" << curvePixel.y<<std::endl;
+    std::cout << "running Marching\n";
 
+    std::vector<Pixel> workList;    //Make worklist a vector
+    std::map<Pixel, bool> visitedList; //make map of pixels
+   // bool* visitedPixels; 
+    //visitedPixels = new bool[sizeX*sizeY];
     
+
+    workList.push_back(searchThresholdPixel(ui, blob, threshold));  //Find pixel on curve and put on worklist
+    
+
+    while (!workList.empty()) {
+        
+
+        Pixel currentPixel = workList.back();  //find last pixel worklist and remove it
+        workList.pop_back();
+
+        if (visitedList.find(currentPixel) != visitedList.end()) {     //Check if pixel is already visited
+            
+            continue; //skip to next iteration of loop
+        }
+        else {
+            
+            visitedList.insert(std::pair<Pixel, bool>(currentPixel, true)); //Add pixel to list;
+        }
+        if (checkPixel(workList, currentPixel, blob, threshold)) {
+            addNeighbourPixels(currentPixel, workList);
+            ui.drawPixel(currentPixel.x, currentPixel.y);
+        }
+    } 
+    //delete visitedPixels;
 }
 
 /// Improved marching squares algorithm.
@@ -241,7 +280,7 @@ Pixel searchThresholdPixel(UI& ui, Blob& blob, float threshold)
     {
         for (int x = -sizeY; x < sizeY; x++) //loop through colums (x coordinates)
         {
-            if (blob.potential((float)x, (float)y > threshold)) 
+            if (blob.potential((float)x, (float)y) > threshold) 
             {
                 
                 tmpPixel.x = x;
@@ -251,4 +290,42 @@ Pixel searchThresholdPixel(UI& ui, Blob& blob, float threshold)
         }
     }
     return tmpPixel;
+}
+
+
+//return max potential around pixel
+bool checkPixel(std::vector<Pixel>& tmpWorklist, Pixel tmpPixel, Blob& blob, float threshold) {
+    
+    float PXminYmin   = blob.potential(float(tmpPixel.x) - 0.5, float(tmpPixel.y) - 0.5);
+    float PXminYplus  = blob.potential(float(tmpPixel.x) - 0.5, float(tmpPixel.y) + 0.5);
+    float PXplusYmin  = blob.potential(float(tmpPixel.x) - 0.5, float(tmpPixel.y) - 0.5);
+    float PXplusYplus = blob.potential(float(tmpPixel.x) + 0.5, float(tmpPixel.y) + 0.5);
+
+
+
+    std::array<float, 4> tmpArray{ PXminYmin,PXminYplus,PXplusYmin,PXplusYplus };
+
+    float max = *std::max_element(tmpArray.begin(), tmpArray.end());
+    float min = *std::min_element(tmpArray.begin(), tmpArray.end());    
+
+    if (max > threshold && min < threshold) {
+        
+        return true;
+    }
+    else{
+        return false;
+    }
+}
+
+void addNeighbourPixels(Pixel tmpPixel, std::vector<Pixel>& tmpWorklist) {
+    Pixel curPixel;
+    for (int x = -1; x < 2; ++x) {
+        for (int y = -1; y < 2; ++y) {
+            if (x != 0 || y != 0) {
+                curPixel.x = tmpPixel.x + x;
+                curPixel.y = tmpPixel.y + y;
+                tmpWorklist.push_back(curPixel);
+            }
+        }
+    }
 }
