@@ -149,13 +149,18 @@ void drawContourMarching(UI &ui, Blob &blob, float threshold = 0.015)
     // YOUR CODE HERE
     const int sizeX = ui.sizeX;
     const int sizeY = ui.sizeY;
+    const int offset = (sizeX * sizeY) / 2;
 
     std::cout << "running Marching\n";
 
     std::vector<Pixel> workList;    //Make worklist a vector
-    std::map<Pixel, bool> visitedList; //make map of pixels
-   // bool* visitedPixels; 
-    //visitedPixels = new bool[sizeX*sizeY];
+
+    bool* visitedPixels; 
+    visitedPixels = new bool[sizeX*sizeY];
+
+    for (int i = 0; i < sizeX * sizeY; i++) {
+        visitedPixels[i] = false;
+    }
     
 
     workList.push_back(searchThresholdPixel(ui, blob, threshold));  //Find pixel on curve and put on worklist
@@ -166,21 +171,22 @@ void drawContourMarching(UI &ui, Blob &blob, float threshold = 0.015)
 
         Pixel currentPixel = workList.back();  //find last pixel worklist and remove it
         workList.pop_back();
+        bool x = visitedPixels[currentPixel.x + sizeX * currentPixel.y + offset];
 
-        if (visitedList.find(currentPixel) != visitedList.end()) {     //Check if pixel is already visited
+        if (visitedPixels[currentPixel.x + sizeX*currentPixel.y+offset]) {     //Check if pixel is already visited
             
             continue; //skip to next iteration of loop
         }
         else {
             
-            visitedList.insert(std::pair<Pixel, bool>(currentPixel, true)); //Add pixel to list;
+            visitedPixels[currentPixel.x + sizeX * currentPixel.y + offset] = true; //Add pixel to list;
         }
         if (checkPixel(workList, currentPixel, blob, threshold)) {
             addNeighbourPixels(currentPixel, workList);
             ui.drawPixel(currentPixel.x, currentPixel.y);
         }
     } 
-    //delete visitedPixels;
+    delete visitedPixels;
 }
 
 /// Improved marching squares algorithm.
@@ -275,6 +281,22 @@ Pixel searchThresholdPixel(UI& ui, Blob& blob, float threshold)
     const int sizeX = ui.sizeX;
     const int sizeY = ui.sizeY;
     Pixel tmpPixel;
+
+    for (int y = -sizeX + 1; y < sizeX; y++) //loop through rows (y coordinates)
+    {
+        for (int x = -sizeY; x < sizeY; x = x + 30) //loop through colums (x coordinates)
+        {
+            if (blob.potential((float)x, (float)y) > threshold)
+            {
+
+                tmpPixel.x = x;
+                tmpPixel.y = y;
+                return tmpPixel;
+            }
+        }
+    }
+
+    
 
     for (int y = -sizeX + 1; y < sizeX; y++) //loop through rows (y coordinates)
     {
