@@ -370,44 +370,44 @@ int main(int /*argc*/, char ** /*argv*/)
 //This functions returns the first pixel on the curve of the vector field it finds, if nothing is found it return the standard 0,0 pixel
 Pixel searchThresholdPixel(UI& ui, Blob& blob, float threshold)
 { 
-    const int sizeX = ui.sizeX;
-    const int sizeY = ui.sizeY;
+    const int sizeX = ui.sizeX; //find screen size
+    const int sizeY = ui.sizeY; //" "
     Pixel tmpPixel;
 
     for (int y = -sizeY / 2; y < sizeY / 2; y ++) //loop through rows (y coordinates)
     {
         for (int x = -sizeX/2; x < sizeX/2; x++) //loop through rows (x coordinates)
         {
-            if (blob.potential((float)x, (float)y) > threshold)
+            if (blob.potential((float)x, (float)y) > threshold) //if potential is more than threshold
             {
-                tmpPixel.x = x;
-                tmpPixel.y = y;
-                return tmpPixel;
+                tmpPixel.x = x; //set pixel to 
+                tmpPixel.y = y; //set y coordinate 
+                return tmpPixel;//return pixel on contour
             }
         }
     }
-return tmpPixel;
+return tmpPixel; //return default pixel
 
 }
 
 
-//return max potential around pixel
+//return if pixel is on countour of potential field
 bool checkPixel(std::vector<Pixel>& tmpWorklist, Pixel tmpPixel, Blob& blob, float threshold) {
     
-    float PXminYmin   = blob.potential(float(tmpPixel.x) - 0.5, float(tmpPixel.y) - 0.5);
+    //calculate 4 points around pixel
+    float PXminYmin   = blob.potential(float(tmpPixel.x) - 0.5, float(tmpPixel.y) - 0.5); 
     float PXminYplus  = blob.potential(float(tmpPixel.x) - 0.5, float(tmpPixel.y) + 0.5);
     float PXplusYmin  = blob.potential(float(tmpPixel.x) - 0.5, float(tmpPixel.y) - 0.5);
     float PXplusYplus = blob.potential(float(tmpPixel.x) + 0.5, float(tmpPixel.y) + 0.5);
 
 
-
+    //make array of the four values
     std::array<float, 4> tmpArray{ PXminYmin,PXminYplus,PXplusYmin,PXplusYplus };
-
+    //find max and min of value
     float max = *std::max_element(tmpArray.begin(), tmpArray.end());
     float min = *std::min_element(tmpArray.begin(), tmpArray.end());    
 
-    if (max > threshold && min < threshold) {
-        
+    if (max > threshold && min < threshold) { //if max and min are more and less than threshold repectively
         return true;
     }
     else{
@@ -415,39 +415,43 @@ bool checkPixel(std::vector<Pixel>& tmpWorklist, Pixel tmpPixel, Blob& blob, flo
     }
 }
 
+//This function adds neighbour pixels to a worklist
 void addNeighbourPixels(Pixel tmpPixel, std::vector<Pixel>& tmpWorklist) {
-    Pixel curPixel;
-    for (int x = -1; x < 2; ++x) {
-        for (int y = -1; y < 2; ++y) {
-            if (x != 0 || y != 0) {
-                curPixel.x = tmpPixel.x + x;
-                curPixel.y = tmpPixel.y + y;
-                tmpWorklist.push_back(curPixel);
+    Pixel curPixel; 
+    for (int x = -1; x < 2; ++x) //loop of x coordinates
+    {
+        for (int y = -1; y < 2; ++y) //loop over y coordinates
+        {
+            if (x != 0 || y != 0) { //all 9 pixels exept the middle (0,0)
+                curPixel.x = tmpPixel.x + x; //add current x plus offset
+                curPixel.y = tmpPixel.y + y; // add current y plus offset
+                tmpWorklist.push_back(curPixel); // add pixel to worklist
             }
         }
     }
 }
 
+//Search for threshold pixel by scanning, but it can search in reverse direction and skip lines to speed things up and find both vector fields(or twice the same)
 Pixel searchThresholdPixelBetter(UI& ui, Blob& blob, float threshold, bool reverseScan)
 {
-    const int sizeX = ui.sizeX;
-    const int sizeY = ui.sizeY;
+    const int sizeX = ui.sizeX; //screen dimensions
+    const int sizeY = ui.sizeY; //screen dimensions
 
 
-    Pixel tmpPixel;
+    Pixel tmpPixel; //tmp pixel to work with
 
 
-    if (reverseScan)
+    if (!reverseScan) //scan normally when reversescan is false
     {
         for (int y = -sizeY / 2; y < sizeY / 2; y+=SKIP_NUM_ROWS) //loop through rows (y coordinates)
         {
             for (int x = -sizeX / 2; x < sizeX / 2; x++) //loop through colums (x coordinates)
             {
-                if (blob.potential((float)x, (float)y) > threshold)
+                if (blob.potential((float)x, (float)y) > threshold)// threshold found
                 {
-                    tmpPixel.x = x;
-                    tmpPixel.y = y;
-                    return tmpPixel;
+                    tmpPixel.x = x; 
+                    tmpPixel.y = y; 
+                    return tmpPixel; 
                 }
             }
         }
@@ -476,9 +480,9 @@ void fillBufferWithdata(Blob& blob, bool* pixels, float threshold, int totalThre
     Point curPoint;  //previous point
     Pixel curPixel; // current pixel
 
-    const int sizeX = 1000;
+    const int sizeX = 1000; 
     const int sizeY = 600;
-    const int offset = (sizeX * sizeY) / 2;
+    const int offset = (sizeX * sizeY) / 2; // offset since screen middle is 0,0
     
 
     curPoint.x = (float)-sizeX/2; //first point to check against x coordinate
@@ -504,10 +508,10 @@ void fillBufferWithdata(Blob& blob, bool* pixels, float threshold, int totalThre
 
             if (curPotOverThres != prevPotOverThres)    //check if current point is bigger than previous and bigger than threshold    
             {
-                pixels[x + sizeX * y + offset] = true;
+                pixels[x + sizeX * y + offset] = true;  //set value of pixel in buffer
             }
 
-            prevPotOverThres = curPotOverThres; //set net prev potential                
+            prevPotOverThres = curPotOverThres; //set new prev potential                
         }
     }
 
@@ -516,7 +520,3 @@ void fillBufferWithdata(Blob& blob, bool* pixels, float threshold, int totalThre
     
 }
 
-void testThread(int tmpValue)
-{
-    std::cout << "value is: "<<tmpValue << std::endl;
-}
