@@ -32,6 +32,7 @@
 #include <array>
 
 #define NUM_OF_PEAKS 2
+#define SKIP_NUM_ROWS 10
 
 
 
@@ -95,7 +96,7 @@ struct Blob
 Pixel searchThresholdPixel(UI& ui, Blob& blob, float threshold = 0.015);
 bool checkPixel(std::vector<Pixel>& tmpWorklist, Pixel tmpPixel, Blob& blob, float threshold);
 void addNeighbourPixels(Pixel tmpPixel, std::vector<Pixel>& tmpWorklist);
-Pixel searchThresholdPixelBetter(UI& ui, Blob& blob, float threshold, bool * onCurve);
+Pixel searchThresholdPixelBetter(UI& ui, Blob& blob, float threshold, bool reverseScan);
 
 /// Scans full screen area. Complexity?
 void drawContourScanning(UI &ui, Blob &blob, float threshold = 0.015)
@@ -217,7 +218,7 @@ void drawContourMarchingBetter(UI& ui, Blob& blob, float threshold = 0.015)
 
     for (int i = 0; i < NUM_OF_PEAKS ; i++)
     {
-        workList.push_back(searchThresholdPixelBetter(ui, blob, threshold, visitedPixels));  //Find pixel on curve and put on worklist
+        workList.push_back(searchThresholdPixelBetter(ui, blob, threshold, i));  //Find pixel on curve and put on worklist
 
 
         while (!workList.empty()) //Check if worklist is empty
@@ -329,7 +330,7 @@ Pixel searchThresholdPixel(UI& ui, Blob& blob, float threshold)
 
     for (int y = -sizeY / 2; y < sizeY / 2; y ++) //loop through rows (y coordinates)
     {
-        for (int x = -sizeX/2; x < sizeY/2; x++) //loop through rows (x coordinates)
+        for (int x = -sizeX/2; x < sizeX/2; x++) //loop through rows (x coordinates)
         {
             if (blob.potential((float)x, (float)y) > threshold)
             {
@@ -380,7 +381,7 @@ void addNeighbourPixels(Pixel tmpPixel, std::vector<Pixel>& tmpWorklist) {
     }
 }
 
-Pixel searchThresholdPixelBetter(UI& ui, Blob& blob, float threshold, bool* onCurve)
+Pixel searchThresholdPixelBetter(UI& ui, Blob& blob, float threshold, bool reverseScan)
 {
     const int sizeX = ui.sizeX;
     const int sizeY = ui.sizeY;
@@ -389,18 +390,35 @@ Pixel searchThresholdPixelBetter(UI& ui, Blob& blob, float threshold, bool* onCu
     Pixel tmpPixel;
 
 
-
-    for (int y = -sizeY / 2; y < sizeY / 2; y++) //loop through rows (y coordinates)
+    if (reverseScan)
     {
-        for (int x = -sizeX / 2; x < sizeY / 2; x++) //loop through rows (x coordinates)
+        for (int y = -sizeY / 2; y < sizeY / 2; y+=SKIP_NUM_ROWS) //loop through rows (y coordinates)
         {
-            if (blob.potential((float)x, (float)y) > threshold && *(onCurve+offset+x+y*sizeX))
+            for (int x = -sizeX / 2; x < sizeX / 2; x++) //loop through colums (x coordinates)
             {
-                tmpPixel.x = x;
-                tmpPixel.y = y;
-                return tmpPixel;
+                if (blob.potential((float)x, (float)y) > threshold)
+                {
+                    tmpPixel.x = x;
+                    tmpPixel.y = y;
+                    return tmpPixel;
+                }
             }
         }
+    }
+    else {
+        for (int y = sizeY / 2; y > -sizeY / 2; y-=SKIP_NUM_ROWS) //loop through rows (y coordinates)
+        {
+            for (int x = sizeX / 2; x > -sizeX / 2; x--) //loop through rows (x coordinates)
+            {
+                if (blob.potential((float)x, (float)y) > threshold)
+                {
+                    tmpPixel.x = x;
+                    tmpPixel.y = y;
+                    return tmpPixel;
+                }
+            }
+        }
+
     }
     return tmpPixel;
 }
