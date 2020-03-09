@@ -103,8 +103,8 @@ void drawContourScanning(UI &ui, Blob &blob, float threshold = 0.015)
     std::cout << "running Scanning\n";
     Point curPoint;  //previous point
 
-    curPoint.x = (float)-sizeX; //first point to check against x coordinate
-    curPoint.y = (float)-sizeY; //first point to check against y coordinate
+    curPoint.x = (float)-sizeX/2; //first point to check against x coordinate
+    curPoint.y = (float)-sizeY/2; //first point to check against y coordinate
 
     bool curPotOverThres;   //current potential of point                     
     bool prevPotOverThres;  //potential of previous point
@@ -155,17 +155,18 @@ void drawContourScanningThreaded(UI &ui, Blob &blob, float threshold = 0.015)
     }
 
     //start 3 threads with each a dedicated part of the vector field to scan
-    std::thread a(fillBufferWithdata,  blob, bufferPixels, threshold, 4, 0);
+    std::thread a(fillBufferWithdata, blob, bufferPixels, threshold, 4, 0);
     std::thread b(fillBufferWithdata, blob, bufferPixels, threshold,4,1);
     std::thread c(fillBufferWithdata, blob, bufferPixels,  threshold,4,2);
 
-    fillBufferWithdata( blob, bufferPixels, threshold, 4, 3);
+    fillBufferWithdata(blob, bufferPixels, threshold, 4, 3);
+    
     //sync threads (wait till they are done)
     a.join(); 
     b.join();
     c.join();
 
-
+    //TO do: make in function
     for (int y = -sizeY / 2+1 ; y < sizeY / 2; y++)  //loop through columns (y axis)
     {
         for (int x = -sizeX / 2; x < sizeX / 2; x++)    //loop through colums (x axis)
@@ -198,7 +199,6 @@ void drawContourMarching(UI &ui, Blob &blob, float threshold = 0.015)
     const int offset = (sizeX * sizeY) / 2; //offset for making center pixel 0,0
 
     std::cout << "running Marching\n"; //log
-
     std::vector<Pixel> workList;    //Make worklist a vector
 
     bool* visitedPixels; //Visted list (pointer to map of pixels on screen)
@@ -208,7 +208,7 @@ void drawContourMarching(UI &ui, Blob &blob, float threshold = 0.015)
     for (int i = 0; i < sizeX * sizeY; i++) {
         visitedPixels[i] = false;
     }    
-    
+    //TO DO: CHECK IF NO VECTORFIELD WAS FOUND
     workList.push_back(searchThresholdPixel(ui, blob, threshold));  //Find pixel on curve and put on worklist
     
 
@@ -237,7 +237,6 @@ void drawContourMarching(UI &ui, Blob &blob, float threshold = 0.015)
 void drawContourMarchingBetter(UI& ui, Blob& blob, float threshold = 0.015)
 {
     // YOUR CODE HERE
-        // YOUR CODE HERE
     const int sizeX = ui.sizeX; //size of screen in x direction
     const int sizeY = ui.sizeY; //size of screen in y direction
     const int offset = (sizeX * sizeY) / 2; //offset for making center pixel 0,0
@@ -245,7 +244,7 @@ void drawContourMarchingBetter(UI& ui, Blob& blob, float threshold = 0.015)
     std::cout << "running Marching++\n"; //log
 
     std::vector<Pixel> workList;    //Make worklist a vector
-
+    
     bool* visitedPixels; //Visted list (pointer to map of pixels on screen)
     visitedPixels = new bool[sizeX * sizeY]; //allocate memory 
 
