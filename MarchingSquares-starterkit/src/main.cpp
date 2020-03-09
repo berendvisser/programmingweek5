@@ -92,7 +92,7 @@ bool checkPixel(std::vector<Pixel>& tmpWorklist, Pixel tmpPixel, Blob& blob, flo
 void addNeighbourPixels(Pixel tmpPixel, std::vector<Pixel>& tmpWorklist);
 Pixel searchThresholdPixelBetter(UI& ui, Blob& blob, float threshold, bool reverseScan);
 void fillBufferWithdata(Blob& blob, bool* pixels, float threshold, int totalThreads, int threadNumber);
-
+void drawBuffer(UI& ui, bool* buffer);
 /// Scans full screen area. Complexity?
 void drawContourScanning(UI &ui, Blob &blob, float threshold = 0.015)
 {
@@ -143,7 +143,7 @@ void drawContourScanningThreaded(UI &ui, Blob &blob, float threshold = 0.015)
     // YOUR CODE HERE
     const int sizeX = ui.sizeX;
     const int sizeY = ui.sizeY;
-    const int offset = (sizeX * sizeY) / 2;
+
 
     
     bool* bufferPixels; //Visted list (pointer to map of pixels on screen)
@@ -167,18 +167,8 @@ void drawContourScanningThreaded(UI &ui, Blob &blob, float threshold = 0.015)
     c.join();
 
     //TO do: make in function
-    for (int y = -sizeY / 2+1 ; y < sizeY / 2; y++)  //loop through columns (y axis)
-    {
-        for (int x = -sizeX / 2; x < sizeX / 2; x++)    //loop through colums (x axis)
-        {
-           if (bufferPixels[x + sizeX * y + offset])    //check if current point is bigger than previous and bigger than threshold    
-            {
-               ui.drawPixel(x, y); // draw pixels
-            }
+    drawBuffer(ui, bufferPixels);
 
-                          
-        }
-    }
 
     
 
@@ -511,3 +501,23 @@ void fillBufferWithdata(Blob& blob, bool* pixels, float threshold, int totalThre
     
 }
 
+//class to draw buffer
+void drawBuffer(UI& ui, bool* buffer) {
+    const int sizeX = ui.sizeX; //screen size x
+    const int sizeY = ui.sizeY; //screen size y
+    const int offset = (sizeX * sizeY) / 2;
+
+    for (int y = -sizeY / 2 + 1; y < sizeY / 2; y++)  //loop through columns (y axis)
+    {
+        for (int x = -sizeX / 2; x < sizeX / 2; x++)    //loop through colums (x axis)
+        {
+            if (buffer[x + sizeX * y + offset])    //check if current point is bigger than previous and bigger than threshold    
+            {
+                ui.drawPixel(x, y); // draw pixels
+            }
+
+
+        }
+    }
+
+}
